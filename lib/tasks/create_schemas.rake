@@ -1,4 +1,7 @@
+#See: http://docs.aws.amazon.com/redshift/latest/dg/c_Supported_data_types.html
+
 namespace :create_schemas do
+  desc 'sample of creating a new table on the warehouse'
   task :events => :environment do |task|
     connection = RedshiftBase.pg_connection
     connection.exec <<-EOS
