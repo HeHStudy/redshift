@@ -6,5 +6,4 @@ class RedshiftBase < ActiveRecord::Base
   def self.pg_connection
     self.connection.instance_eval{@connection}
   end
-
 end

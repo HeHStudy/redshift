@@ -21,4 +21,22 @@ namespace :create_schemas do
       DISTSTYLE even;
     EOS
   end
+
+  desc 'create fitbit_intraday table'
+  task :fitbit_intraday => :environment do |task|
+    connection = RedshiftBase.pg_connection
+    connection.exec <<-EOS
+      CREATE TABLE fitbit_intraday (
+        id BIGINT SORTKEY NOT NULL,
+        measurement_id INT NOT NULL,
+        user_id INT NOT NULL,
+        date date NOT NULL,
+        minute INT NOT NULL,
+        resource VARCHAR(100) NOT NULL,
+        value decimal(8,2) NOT NULL,
+        PRIMARY KEY(id)
+      )
+      DISTSTYLE even;
+    EOS
+  end
 end
