@@ -17,13 +17,7 @@ class Loader
       })
 
       # connect to Redshift
-      db = PG.connect(
-        host: ENV['REDSHIFT_HOST'],
-        port: ENV['REDSHIFT_PORT'],
-        user: ENV['REDSHIFT_USER'],
-        password: ENV['REDSHIFT_PASSWORD'],
-        dbname: ENV['REDSHIFT_DATABASE'],
-      )
+      db = RedshiftBase.pg_connection
 
       # extract data to CSV files and uplaod to S3
       User.find_in_batches(batch_size: BATCH_SIZE).with_index do |group, batch|

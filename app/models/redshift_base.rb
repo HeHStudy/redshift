@@ -1,4 +1,9 @@
 class RedshiftBase < ActiveRecord::Base
-  establish_connection Rails.application.secrets.redshift_config
+  #Define your redshift db settings on config/database.yml
+  establish_connection ActiveRecord::Base.configurations["redshift"]
   self.abstract_class = true
+
+  def self.pg_connection
+    self.connection.instance_eval{@connection}
+  end
 end
