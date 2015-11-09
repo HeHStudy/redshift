@@ -4,7 +4,7 @@ module Etl
     BUCKET = ENV['REDSHIFT_BUCKET']
     BATCH_SIZE = 1000
     TABLE = 'fitbit_intraday'
-    COLUMNS = %w( user_id measurement_id date minute resource value )
+    COLUMNS = %w( id user_id date minute resource value )
     RESOURCE = 'steps'
 
     def self.prepare_aws_s3
@@ -18,11 +18,11 @@ module Etl
       })
     end
 
-    def self.load_data_to_redshift table
+    def self.load_data_to_redshift
       db = RedshiftBase.pg_connection
       # load the data, specifying the order of the fields
       db.exec <<-EOS
-        COPY #{table} (#{COLUMNS.join(',')})
+        COPY #{TABLE} (#{COLUMNS.join(',')})
         FROM 's3://#{BUCKET}/#{TABLE}/data'
         CREDENTIALS 'aws_access_key_id=#{ENV['AWS_ACCESS_KEY_ID']};aws_secret_access_key=#{ENV['AWS_SECRET_ACCESS_KEY']}'
         CSV
@@ -33,7 +33,7 @@ module Etl
 
     def self.load
       self.transform_and_upload_to_s3
-      #self.load_data_to_redshift TABLE
+      self.load_data_to_redshift
     end
 
     def self.transform_and_upload_to_s3
@@ -49,7 +49,7 @@ module Etl
                 record.decode_intraday_resource.each_with_index do |val,i|
                   i+=1
                   next if val == 0
-                  csv << [record.user_id, record.id, record.date, i, RESOURCE, val]
+                  csv << [record.id, record.user_id, record.date.strftime("%Y-%m-%d"), i, RESOURCE, val.to_f]
                 end
             end
             gz.write csv_string
