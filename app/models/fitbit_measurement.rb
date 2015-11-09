@@ -21,26 +21,6 @@ class FitbitMeasurement < Measurement
     JSON.parse( value_json )[key_name]
   end
 
-  def steps
-    decoding_method_for 'steps'
-  end
-
-  def calories
-    decoding_method_for 'calories'
-  end
-
-  def distance
-    decoding_method_for 'distance'
-  end
-
-  def floors
-    decoding_method_for 'floors'
-  end
-
-  def elevation
-    decoding_method_for 'elevation'
-  end
-
   def decode_intraday_resource resource='steps'
     data = find_attribute resource
     return unless data
