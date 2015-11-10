@@ -4,7 +4,7 @@ module Etl
     BUCKET = ENV['REDSHIFT_BUCKET']
     BATCH_SIZE = 1000
     TABLE = 'fitbit_intraday'
-    COLUMNS = %w( id user_id date minute resource value )
+    COLUMNS = %w( measurement_id user_id date minute resource value )
     RESOURCE = 'steps'
 
     def self.prepare_aws_s3
@@ -34,23 +34,32 @@ module Etl
     def self.load
       self.transform_and_upload_to_s3
       self.load_data_to_redshift
+      self.clean_up_s3_bucket
     end
 
+    def self.clean_up_s3_bucket
+      s3     = Aws::S3::Resource.new
+      bucket = s3.bucket(BUCKET)
+      bucket.clear!
+    end
+
+    # extract data to CSV files and uplaod to S3
     def self.transform_and_upload_to_s3
       self.prepare_aws_s3
-      # extract data to CSV files and uplaod to S3
-      measurements = FitbitMeasurement.intraday
-      measurements = measurements.where("value_json NOT LIKE '%steps\":null%'").first(20)
-      #measurements.find_in_batches(batch_size: BATCH_SIZE).with_index do |group, batch|
-      measurements.each_with_index do |record, batch|
+      measurements = FitbitMeasurement.intraday.where("id > ?", RedshiftFitbitIntraday.latest_measurement_id )
+      measurements = measurements.where("value_json NOT LIKE '%steps\":null%'")
+      measurements.find_in_batches(batch_size: BATCH_SIZE).with_index do |group, batch|
         Tempfile.open(TABLE) do |f|
           Zlib::GzipWriter.open(f) do |gz|
             csv_string = CSV.generate do |csv|
+              group.each do |record|
+                puts "processing meas_id: #{record.id}"
                 record.decode_intraday_resource.each_with_index do |val,i|
                   i+=1
                   next if val == 0
                   csv << [record.id, record.user_id, record.date.strftime("%Y-%m-%d"), i, RESOURCE, val.to_f]
                 end
+              end
             end
             gz.write csv_string
           end
@@ -59,6 +68,7 @@ module Etl
           key = "#{TABLE}/data-#{batch}.gz"
           obj = s3.bucket(BUCKET).object(key)
           obj.upload_file(f)
+          puts ">>> file uploaded to s3"
         end
       end
     end

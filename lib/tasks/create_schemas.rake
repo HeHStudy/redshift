@@ -6,7 +6,8 @@ namespace :create_schemas do
     connection = RedshiftBase.pg_connection
     connection.exec <<-EOS
       CREATE TABLE fitbit_intraday (
-        id BIGINT SORTKEY NOT NULL,
+        id INT IDENTITY NOT NULL,
+        measurement_id INT NOT NULL,
         user_id INT NOT NULL,
         date date NOT NULL,
         minute INT NOT NULL,
